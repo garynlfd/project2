@@ -46,7 +46,6 @@ void FloorCleaner::SetCell(int row, int col, char cell_type)
     {
         charging_cell_.first = row;
         charging_cell_.second = col;
-        //path_.emplace_back(row, col);
     }
     if(cell_type == '0')
     {
@@ -61,7 +60,33 @@ void FloorCleaner::Clean()
 
 std::vector<FloorCleaner::Cell> FloorCleaner::ShortestPath(const Cell &source, const Cell &destination)
 {
-
+    std::vector<Cell> path;
+    std::queue<std::vector<Cell> > queue({{source}});
+    std::set<Cell> visited({source});
+    int dir_r[] = {1, -1, 0, 0};
+    int dir_c[] = {0, 0, 1, -1};
+    while (!queue.empty())
+    {
+        path = queue.front();
+        queue.pop();
+        Cell cell = path.back();
+        if(cell == destination) return path;
+        for(int i = 0; i < 4; ++i)
+        {
+            Cell next_cell(cell.first + dir_r[i], cell.second + dir_c[i]);
+            if ((next_cell.first >= 0 && next_cell.first < rows_) &&
+            (next_cell.second >= 0 && next_cell.second < cols_) &&
+            floor_[next_cell.first][next_cell.second] == '0' &&
+            visited.find(next_cell) == visited.end())
+            {
+                path.emplace_back(next_cell);
+                queue.emplace(path);
+                path.pop_back();
+                visited.emplace(next_cell);
+            }
+         }
+    }
+    return std::vector<Cell>();  // path not found
 }
 
 int main(int argc, const char *argv[]) {
@@ -88,6 +113,7 @@ int main(int argc, const char *argv[]) {
         }
         robot->Clean();
         output.open(fileoutput.c_str());
+        std::vector<FloorCleaner::Cell> path = robot->CleaningPath();
         output << robot->TotalSteps() << std::endl;
         for(const FloorCleaner::Cell &cell : path)
             output << cell.first << " " << cell.second << std::endl;
