@@ -1,110 +1,101 @@
-#include <iostream>
-#include <string>
 #include <fstream>
-#include <cstdio>
+#include <iostream>
+#include <vector>
+#include <algorithm>
 #include <queue>
-using namespace std;
-const int MAX_row = 100;
-const int MAX_col = 100;
-const int INF = 1000000;
-int steps = 0;
-int ans_x[MAX_row];
-int ans_y[MAX_col];
-int rows, cols;
-typedef pair<int, int> P;
-char maze[MAX_row][MAX_col + 1];
-int Rx, Ry; ///location of R
-int d[MAX_row][MAX_col];///the distance of R to the point
-int dx[4] = { 1,0,-1,0 }, dy[4] = { 0,1,0,-1 }; ///the displacement
+#include <set>
+#include <map>
+#include <string>
 
-void bfs()
-{
-	queue<P> Q;
-	for (int i = 0; i < rows; i++)
-    {
-		for (int j = 0; j < cols; j++)
-        {
-			d[i][j] = INF;
-        }
-    }
-	Q.push(P(Rx, Ry));
-	d[Rx][Ry] = 0; ///start from R, distance = 0
+class FloorCleaner {
+ public:
+  using Cell = std::pair<int, int>;
 
-	while (Q.size())
-	{
-		P p = Q.front();
-		Q.pop();
-		if(maze[p.first+1][p.second] != '0' &&
-           maze[p.first-1][p.second] != '0' &&
-           maze[p.first][p.second+1] != '0' &&
-           maze[p.first][p.second-1] != '0') continue;
+  FloorCleaner(int, int, int);
 
-		for (int i = 0; i < 4; i++)
-		{
-			int nx = p.first + dx[i];
-			int ny = p.second + dy[i];
-			if (0 <= nx&&nx < rows
-				&& 0 <= ny&&ny < cols
-				&&maze[nx][ny] == '0')
-			{
-				Q.push(P(nx, ny));
-				maze[nx][ny] = '2';
-				steps++;
-				ans_x[steps] = nx;
-				ans_y[steps] = ny;
-				d[nx][ny] = d[p.first][p.second] + 1;
-			}
-		}
-	}
+  void SetCell(int, int, char);
+  void Clean();
+
+  std::size_t TotalSteps() const { return path_.size(); }
+  std::vector<Cell> CleaningPath() const { return path_; }
+
+ private:
+  std::vector<Cell> ShortestPath(const Cell&, const Cell&);
+
+  const int rows_, cols_;
+  const int battery_life_;
+  Cell charging_cell_;
+  std::vector<Cell> path_;
+  std::map<Cell, bool> cleaned_;
+  std::vector<std::vector<char> > floor_;
+  std::vector<std::vector<Cell> > shortest_paths_;
+};
+
+FloorCleaner::FloorCleaner(int rows, int cols, int battery_life)
+    : rows_(rows),
+      cols_(cols),
+      battery_life_(battery_life),
+      charging_cell_(-1, -1),
+      floor_(rows, std::vector<char>(cols)) {
 }
 
-int main(int argc, char *argv[])
+void FloorCleaner::SetCell(int row, int col, char cell_type)
 {
-    string file = "./";
-    string studentID = argv[1];
-    string fileinput = file + studentID + "/floor.data";
-    string fileoutput = file + studentID + "/final.path";
-    ifstream input;
-    ofstream output;
+    floor_[row][col] = cell_type;
+    if(cell_type == 'R')
+    {
+        charging_cell_.first = row;
+        charging_cell_.second = col;
+        //path_.emplace_back(row, col);
+    }
+    if(cell_type == '0')
+    {
+        cleaned_[{row, col}] = false;
+    }
+}
+
+void FloorCleaner::Clean()
+{
+
+}
+
+std::vector<FloorCleaner::Cell> FloorCleaner::ShortestPath(const Cell &source, const Cell &destination)
+{
+
+}
+
+int main(int argc, const char *argv[]) {
+    std::string file = "./";
+    std::string studentID = argv[1];
+    std::string fileinput = file + studentID + "/floor.data";
+    std::string fileoutput = file + studentID + "/final.path";
+    std::ifstream input;
+    std::ofstream output;
     input.open(fileinput.c_str());
     if(input)
     {
-        input >> rows >> cols;
-
-        while(!input.eof())
+        int rows, cols, battery_life;
+        input >> rows >> cols >> battery_life;
+        FloorCleaner *robot = new FloorCleaner(rows, cols, battery_life);
+        for(int i = 0; i < rows; ++i)
         {
-            for(int i = 0; i < rows; ++i)
+            for(int j = 0; j < cols; ++j)
             {
-                for(int j = 0; j < cols; ++j)
-                {
-                    input >> maze[i][j];
-                }
+                char cell_type;
+                input >> cell_type;
+                robot->SetCell(i, j, cell_type);
             }
-            int eat;
-            input >> eat;
         }
-        input.close();
-
-        for (int i = 0; i < rows; i++)
-        {
-		    for (int j = 0; j < cols; j++)
-		    {
-			    if (maze[i][j] == 'R')
-			    {
-				    Rx = i;
-				    Ry = j;
-			    }
-		    }
-        }
-	    bfs();
+        robot->Clean();
         output.open(fileoutput.c_str());
-        output << steps << endl;
-        for(int i = 1; i <= steps; ++i)
-        {
-            if(i == steps) output << ans_x[i] << " " << ans_y[i];
-            else output << ans_x[i] << " " << ans_y[i] << endl;
-        }
+        output << robot->TotalSteps() << std::endl;
+        for(const FloorCleaner::Cell &cell : path)
+            output << cell.first << " " << cell.second << std::endl;
         output.close();
-        }
+        //else std::cerr << "failed to write \"final.path\"" << std::endl;
+        delete robot;
+        input.close();
+    }
+    else std::cerr << "failed to open \"floor.data\"" << std::endl;
     return 0;
 }
