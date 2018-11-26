@@ -55,7 +55,41 @@ void FloorCleaner::SetCell(int row, int col, char cell_type)
 
 void FloorCleaner::Clean()
 {
-
+    shortest_paths_.emplace_back(ShortestPath(charging_cell_, cleaned_.begin()->first));
+    Cell source2 = shortest_paths_[0][1];
+    shortest_paths_[0].erase(shortest_paths_[0].begin());
+    for(const auto &cell : cleaned_)
+    {
+        if(cell == *cleaned_.begin()) continue;
+        shortest_paths_.emplace_back(ShortestPath(source2, cell.first));
+    }
+    std::sort(shortest_paths_.begin(), shortest_paths_.end(),
+        [](const std::vector<Cell> &a, const std::vector<Cell> &b) {
+            return a.size() > b.size();
+        });
+    auto not_visited = [&]() {
+        return std::find_if(shortest_paths_.begin(), shortest_paths_.end(),
+            [&](const std::vector<Cell> &path) {
+                return !cleaned_[path.back()];
+            });
+    };
+    auto shortest_path = not_visited();
+    while(shortest_path != shortest_paths_.end())
+    {
+        if(shortest_path->size() * 2 > battery_life_)
+        {
+            std::cerr << "run out of battery" << std::endl;
+            throw std::exception();
+        }
+        path_.insert(path_.end(), shortest_path->begin(), shortest_path->end());
+        path_.insert(path_.end(), shortest_path->rbegin() + 1, shortest_path->rend());
+        for (auto &cell : *shortest_path)
+        {
+            cleaned_[cell] = true;
+        }
+        path_.emplace_back(charging_cell_);
+        shortest_path = not_visited();
+    }
 }
 
 std::vector<FloorCleaner::Cell> FloorCleaner::ShortestPath(const Cell &source, const Cell &destination)
