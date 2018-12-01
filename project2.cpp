@@ -92,7 +92,7 @@ void FloorCleaner::Clean()
     {
         std::vector<Cell> path, return_path;
         path = ShortestPath(second_cell_, c);
-        for(auto &cell : path) { cleaned_[cell] = true; } }
+        for(auto &cell : path) { cleaned_[cell] = true; }
         path_.insert(path_.end(), path.begin(), path.end());
         path_.insert(path_.end(), path.rbegin() + 1, path.rend());
         path_.emplace_back(charging_cell_);
