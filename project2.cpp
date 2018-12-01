@@ -23,6 +23,8 @@ class FloorCleaner {
   std::vector<Cell> ShortestPath(const Cell&, const Cell&);
   void GetDistances(const Cell&);
 
+  const int dir_r_[4] = {1, -1, 0, 0};
+  const int dir_c_[4] = {0, 0, 1, -1};
   const int rows_, cols_;
   const int battery_life_;
   Cell charging_cell_;
@@ -74,8 +76,22 @@ void FloorCleaner::Clean()
                                     return a.second < b.second;
                                 });
     };
-    GetDistances(charging_cell_);
-    second_cell_ = ShortestPath(charging_cell_, max_distance()->first)[1];
+    second_cell_ = [&]()
+    {
+        for(int k = 0; k < 4; ++k)
+        {
+            int r = charging_cell_.first + dir_r_[k];
+            int c = charging_cell_.second + dir_c_[k];
+            if(0 <= r && r < rows_ &&
+               0 <= c && c < cols_ &&
+               floor_[r][c] == '0')
+            {
+                return Cell(r, c);
+            }
+        }
+        return Cell(-1, -1);
+    }();
+
     cleaned_[second_cell_] = true;
     GetDistances(second_cell_);
     auto not_visited = [&]() -> Cell
@@ -103,8 +119,6 @@ void FloorCleaner::Clean()
 
 void FloorCleaner::GetDistances(const Cell &source)
 {
-    const int dir_r[] = {1, -1, 0, 0};
-    const int dir_c[] = {0, 0, 1, -1};
     for(auto &cell : distances_) { cell.second = -1; }
     distances_[source] = 0;
     for(bool done = false; !done;)
@@ -117,8 +131,8 @@ void FloorCleaner::GetDistances(const Cell &source)
                 if(distances_[{i, j}] == -1) continue;
                 for (int k = 0; k < 4; ++k)
                 {
-                    int next_r = i + dir_r[k];
-                    int next_c = j + dir_c[k];
+                    int next_r = i + dir_r_[k];
+                    int next_c = j + dir_c_[k];
                     if((0 <= next_r && next_r < rows_) &&
                        (0 <= next_c && next_c < cols_) &&
                         floor_[next_r][next_c] == '0')
@@ -142,8 +156,6 @@ std::vector<FloorCleaner::Cell> FloorCleaner::ShortestPath(const Cell &source, c
     std::vector<Cell> path;
     std::queue<std::vector<Cell> > queue({{source}});
     std::set<Cell> visited({source});
-    int dir_r[] = {1, -1, 0, 0};
-    int dir_c[] = {0, 0, 1, -1};
     while (!queue.empty())
     {
         path = queue.front();
@@ -152,7 +164,7 @@ std::vector<FloorCleaner::Cell> FloorCleaner::ShortestPath(const Cell &source, c
         if(cell == destination) return path;
         for(int i = 0; i < 4; ++i)
         {
-            Cell next_cell(cell.first + dir_r[i], cell.second + dir_c[i]);
+            Cell next_cell(cell.first + dir_r_[i], cell.second + dir_c_[i]);
             if((next_cell.first >= 0 && next_cell.first < rows_) &&
             (next_cell.second >= 0 && next_cell.second < cols_) &&
             floor_[next_cell.first][next_cell.second] == '0' &&
