@@ -114,7 +114,7 @@ std::vector<FloorCleaner::Cell> FloorCleaner::ShortestPath(const Cell &source, c
             visited.find(next_cell) == visited.end())
             {
                 path.emplace_back(next_cell);
-                queue.emplace(path);
+                queue.emplace(path); //queue may have many paths in the same time
                 path.pop_back();
                 visited.emplace(next_cell);
             }
@@ -152,7 +152,6 @@ int main(int argc, const char *argv[]) {
         for(const FloorCleaner::Cell &cell : path)
             output << cell.first << " " << cell.second << std::endl;
         output.close();
-        //else std::cerr << "failed to write \"final.path\"" << std::endl;
         delete robot;
         input.close();
     }
